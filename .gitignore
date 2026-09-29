@@ -1,0 +1,39 @@
+# --- Build outputs / binaries ---
+build/bin/
+dist/
+*.exe
+*.zip
+
+# --- Dependencies ---
+node_modules/
+frontend/dist/
+
+# --- App runtime / user data ---
+settings.json
+*.local
+
+# --- Logs & temp ---
+*.log
+tmp/
+.tmp/
+
+# --- Editor / IDE ---
+.vscode/
+.idea/
+*.swp
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Secrets / env (never commit) ---
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+*.p12
+id_rsa
+*credential*
+*secret*
