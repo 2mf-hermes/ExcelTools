@@ -24,12 +24,11 @@ ExcelTools 是一套**本機優先、離線可用**的 Excel 桌面工具，用 
 
 ## 🎬 展示畫面
 
-> 📌 截圖佔位：請將實際畫面放到 `docs/screenshots/` 後，把下方路徑換成真實檔名。
+> 📌 上圖為實際執行畫面（946×713）。若之後更新介面，重新截圖覆蓋 `docs/screenshots/main-window.png` 即可。
 
 <div align="center">
 
-<!-- 範例：![ExcelTools 主畫面](docs/screenshots/main.png) -->
-<img src="https://placehold.co/820x480/1e293b/e2e8f0?text=ExcelTools+Demo" alt="ExcelTools 展示畫面（佔位）" width="720" />
+<img src="docs/screenshots/main-window.png" alt="ExcelTools 主畫面" width="720" />
 
 </div>
 
