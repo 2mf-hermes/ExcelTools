@@ -36,6 +36,14 @@ func loadSettings() model.Settings {
 	if err := json.Unmarshal(data, &s); err != nil {
 		return def
 	}
+	// A missing key is not the same as an explicit false: a settings file written
+	// before the update feature existed must keep the check enabled.
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		s.AutoCheckUpdates = def.AutoCheckUpdates
+	} else if _, ok := raw["autoCheckUpdates"]; !ok {
+		s.AutoCheckUpdates = def.AutoCheckUpdates
+	}
 	if s.Language == "" {
 		s.Language = def.Language
 	}

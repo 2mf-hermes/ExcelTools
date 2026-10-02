@@ -9,6 +9,8 @@ export function CancelSheetMerge():Promise<boolean>;
 
 export function CheckForUpdates():Promise<model.UpdateCheckResult>;
 
+export function CheckForUpdatesOnStartup():Promise<model.UpdateCheckResult>;
+
 export function ClassifyPaths(arg1:Array<string>):Promise<Array<model.FileRef>>;
 
 export function DirWritable(arg1:string):Promise<boolean>;
@@ -19,11 +21,15 @@ export function GetSettings():Promise<model.Settings>;
 
 export function Health():Promise<Record<string, string>>;
 
+export function InstallUpdate():Promise<model.UpdateInstallResult>;
+
 export function ListSheets(arg1:string):Promise<model.SheetListResult>;
 
 export function MergeFiles(arg1:main.MergeFilesRequest):Promise<model.MergeResult>;
 
 export function MergeSheets(arg1:main.MergeSheetsRequest):Promise<model.MergeResult>;
+
+export function OpenReleasePage(arg1:string):Promise<void>;
 
 export function PickExcelFile():Promise<model.FileRef>;
 

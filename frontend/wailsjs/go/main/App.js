@@ -14,6 +14,10 @@ export function CheckForUpdates() {
   return window['go']['main']['App']['CheckForUpdates']();
 }
 
+export function CheckForUpdatesOnStartup() {
+  return window['go']['main']['App']['CheckForUpdatesOnStartup']();
+}
+
 export function ClassifyPaths(arg1) {
   return window['go']['main']['App']['ClassifyPaths'](arg1);
 }
@@ -34,6 +38,10 @@ export function Health() {
   return window['go']['main']['App']['Health']();
 }
 
+export function InstallUpdate() {
+  return window['go']['main']['App']['InstallUpdate']();
+}
+
 export function ListSheets(arg1) {
   return window['go']['main']['App']['ListSheets'](arg1);
 }
@@ -44,6 +52,10 @@ export function MergeFiles(arg1) {
 
 export function MergeSheets(arg1) {
   return window['go']['main']['App']['MergeSheets'](arg1);
+}
+
+export function OpenReleasePage(arg1) {
+  return window['go']['main']['App']['OpenReleasePage'](arg1);
 }
 
 export function PickExcelFile() {

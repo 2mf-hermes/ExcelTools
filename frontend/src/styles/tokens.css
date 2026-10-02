@@ -813,6 +813,40 @@ input:focus-visible {
   transition: width 0.2s ease;
 }
 
+/* ——— Update card ——— */
+.update-available {
+  margin-top: var(--space-3);
+}
+
+.update-headline {
+  margin: 0 0 var(--space-2);
+  font-weight: 600;
+}
+
+.update-notes {
+  margin-bottom: var(--space-3);
+}
+
+.update-notes summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: var(--fs-body);
+}
+
+.update-notes pre {
+  margin: var(--space-2) 0 0;
+  padding: 10px 12px;
+  max-height: 200px;
+  overflow: auto;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .item-list {
   margin: var(--space-3) 0 0;
   padding: 0;

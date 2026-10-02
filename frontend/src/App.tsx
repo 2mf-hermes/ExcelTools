@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CheckForUpdates,
+  CheckForUpdatesOnStartup,
   GetAppInfo,
   GetSettings,
+  InstallUpdate,
+  OpenReleasePage,
   ResetSettings,
   SetSettings,
 } from "../wailsjs/go/main/App";
+import { EventsOn } from "../wailsjs/runtime/runtime";
 import type { model } from "../wailsjs/go/models";
 import {
   LOCALES,
@@ -29,6 +33,13 @@ import "./App.css";
 type ThemeMode = "system" | "light" | "dark";
 type Screen = "home" | "settings" | "sheet" | "file";
 
+/**
+ * Payload of the "update:progress" event. Declared here because it only ever
+ * crosses the bridge as an event, so Wails does not emit it into models.ts.
+ * Keep in sync with model.UpdateProgress in core/model/types.go.
+ */
+type UpdateProgress = { done: number; total: number; pct: number };
+
 function resolveTheme(mode: ThemeMode): "light" | "dark" {
   if (mode !== "system") return mode;
   return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
@@ -42,6 +53,10 @@ function App() {
   const [appVersion, setAppVersion] = useState<string>("");
   const [updateMsg, setUpdateMsg] = useState<string | null>(null);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [update, setUpdate] = useState<model.UpdateCheckResult | null>(null);
+  const [installing, setInstalling] = useState(false);
+  const [progress, setProgress] = useState<UpdateProgress | null>(null);
+  const [autoCheck, setAutoCheck] = useState(true);
 
   useEffect(() => {
     document.documentElement.dataset.theme = resolveTheme(theme);
@@ -71,8 +86,18 @@ function App() {
           setLocale(detectLocale(navigator.language));
         }
         if (s?.theme) setTheme(s.theme as ThemeMode);
+        setAutoCheck(s?.autoCheckUpdates ?? true);
       } catch {
         /* keep defaults */
+      }
+      // Automatic check. It stays silent unless a newer release actually exists:
+      // being offline must not greet the user with an error.
+      try {
+        const res = await CheckForUpdatesOnStartup();
+        if (cancelled) return;
+        if (res?.status === "available") setUpdate(res);
+      } catch {
+        /* offline: stay quiet */
       }
     })();
     return () => {
@@ -80,21 +105,34 @@ function App() {
     };
   }, []);
 
-  const persist = useCallback(async (next: { language?: string; theme?: string }) => {
-    try {
-      const current = await GetSettings();
-      const merged: model.Settings = {
-        language: next.language ?? current.language ?? "system",
-        theme: next.theme ?? current.theme ?? "system",
-        defaults: current.defaults ?? {},
-      };
-      await SetSettings(merged);
-      setSettingsMsg("ok");
-      window.setTimeout(() => setSettingsMsg(null), 1500);
-    } catch {
-      setSettingsMsg("fail");
-    }
+  useEffect(() => {
+    const off = EventsOn("update:progress", (p: UpdateProgress) => {
+      setProgress(p);
+    });
+    return () => {
+      if (typeof off === "function") off();
+    };
   }, []);
+
+  const persist = useCallback(
+    async (next: { language?: string; theme?: string; autoCheckUpdates?: boolean }) => {
+      try {
+        const current = await GetSettings();
+        const merged: model.Settings = {
+          language: next.language ?? current.language ?? "system",
+          theme: next.theme ?? current.theme ?? "system",
+          autoCheckUpdates: next.autoCheckUpdates ?? current.autoCheckUpdates ?? true,
+          defaults: current.defaults ?? {},
+        };
+        await SetSettings(merged);
+        setSettingsMsg("ok");
+        window.setTimeout(() => setSettingsMsg(null), 1500);
+      } catch {
+        setSettingsMsg("fail");
+      }
+    },
+    [],
+  );
 
   const onChangeLocale = (l: Locale) => {
     setLocale(l);
@@ -109,20 +147,49 @@ function App() {
   const onCheckUpdate = async () => {
     setCheckingUpdate(true);
     setUpdateMsg(null);
+    setUpdate(null);
     try {
       const res = await CheckForUpdates();
       if (res?.currentVersion) setAppVersion(res.currentVersion);
-      setUpdateMsg(
-        res?.status === "up-to-date"
-          ? t(locale, "updateUpToDate")
-          : t(locale, "updateNoSource"),
-      );
+      setUpdate(res);
+      if (res?.status === "up-to-date") {
+        setUpdateMsg(t(locale, "updateUpToDate"));
+        window.setTimeout(() => setUpdateMsg(null), 4000);
+      } else if (res?.status === "error") {
+        setUpdateMsg(t(locale, "updateOffline"));
+      } else if (res?.status === "available" && !res.canAutoInstall) {
+        setUpdateMsg(t(locale, "updateNoDigest"));
+      }
     } catch {
-      setUpdateMsg(t(locale, "updateNoSource"));
+      setUpdateMsg(t(locale, "updateOffline"));
     } finally {
       setCheckingUpdate(false);
-      window.setTimeout(() => setUpdateMsg(null), 4000);
     }
+  };
+
+  const onInstall = async () => {
+    setInstalling(true);
+    setProgress(null);
+    setUpdateMsg(null);
+    try {
+      const res = await InstallUpdate();
+      if (res?.status === "installed") {
+        // This process is about to exit in favour of the new build, so the
+        // notice stays on screen and `installing` deliberately stays true.
+        setUpdateMsg(t(locale, "updateRestarting"));
+        return;
+      }
+      setUpdateMsg(`${t(locale, "updateFailed")}: ${res?.message ?? ""}`);
+    } catch (e) {
+      setUpdateMsg(`${t(locale, "updateFailed")}: ${String(e)}`);
+    }
+    setInstalling(false);
+    setProgress(null);
+  };
+
+  const onToggleAutoCheck = (value: boolean) => {
+    setAutoCheck(value);
+    void persist({ autoCheckUpdates: value });
   };
 
   const onReset = async () => {
@@ -297,16 +364,91 @@ function App() {
                 <dt>{tr("version")}</dt>
                 <dd>{appVersion || "—"}</dd>
               </dl>
+
+              {update?.status === "available" && (
+                <div className="update-available">
+                  <p className="update-headline">
+                    {t(locale, "updateAvailable", { version: update.latestVersion })}
+                  </p>
+
+                  {update.releaseNotes && (
+                    <details className="update-notes">
+                      <summary>{tr("updateNotes")}</summary>
+                      <pre>{update.releaseNotes}</pre>
+                    </details>
+                  )}
+
+                  {installing && (
+                    <div
+                      className="progress-track"
+                      role="progressbar"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={progress?.pct ?? 0}
+                    >
+                      <div
+                        className="progress-bar"
+                        style={{ width: `${progress?.pct ?? 0}%` }}
+                      />
+                    </div>
+                  )}
+                  {installing && (
+                    <p className="footer-note" role="status">
+                      {progress && progress.pct > 0
+                        ? tr("updateInstalling")
+                        : tr("updateDownloading")}
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="btn-row" style={{ marginTop: "var(--space-3)" }}>
                 <button
                   type="button"
                   className="btn"
-                  disabled={checkingUpdate}
+                  disabled={checkingUpdate || installing}
                   onClick={() => void onCheckUpdate()}
                 >
                   {checkingUpdate ? "…" : tr("checkUpdates")}
                 </button>
+
+                {update?.status === "available" && update.canAutoInstall && (
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    disabled={installing}
+                    onClick={() => void onInstall()}
+                  >
+                    {tr("updateDownload")}
+                  </button>
+                )}
+
+                {update?.status === "available" && !update.canAutoInstall && (
+                  <button
+                    type="button"
+                    className="btn"
+                    disabled={installing}
+                    onClick={() => void OpenReleasePage(update.releaseUrl || "")}
+                  >
+                    {tr("updateManual")}
+                  </button>
+                )}
               </div>
+
+              <label className="field-row checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={autoCheck}
+                  disabled={installing}
+                  onChange={(e) => onToggleAutoCheck(e.target.checked)}
+                />
+                <span>
+                  {tr("updateAutoCheck")}
+                  <br />
+                  <small className="footer-note">{tr("updateAutoCheckHint")}</small>
+                </span>
+              </label>
+
               {updateMsg && (
                 <p className="footer-note" role="status">
                   {updateMsg}

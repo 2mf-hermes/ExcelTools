@@ -12,12 +12,16 @@ import (
 var assets embed.FS
 
 func main() {
+	// Remove the previous version's backup file left by an update. This must run
+	// before the window opens so no stale artefact lingers beside the app.
+	CleanupStaleUpdateFiles()
+
 	app := NewApp()
 
 	err := wails.Run(&options.App{
-		Title:    "ExcelTools",
-		Width:    960,
-		Height:   720,
+		Title:     "ExcelTools",
+		Width:     960,
+		Height:    720,
 		MinWidth:  720,
 		MinHeight: 560,
 		AssetServer: &assetserver.Options{

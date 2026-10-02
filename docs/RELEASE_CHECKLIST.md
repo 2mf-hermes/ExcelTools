@@ -1,6 +1,6 @@
-# ExcelTools Release Checklist (M4)
+# ExcelTools Release Checklist (M5)
 
-App version: 0.4.0-m4  
+App version: 0.5.0-m5  
 Target: Windows 10 1809+ (primary), macOS/Linux smoke (secondary)
 
 ## Build outputs
@@ -39,6 +39,12 @@ If `makensis` is missing, ship portable zip only and note installer as optional.
 - [ ] File combine: merge 2 workbooks; by-header align; partial skip list
 - [ ] Cancel mid-merge leaves no output
 - [ ] Settings persist (language/theme) across restart
+- [ ] Settings persist (`autoCheckUpdates`) across restart
+- [ ] Update check: launch with a newer release published → banner appears
+- [ ] Update check: launch offline → no error shown, app fully usable
+- [ ] Update install: confirm → progress bar → app restarts on the new version
+- [ ] Update install: tampered asset (digest mismatch) → refuses, does not install
+- [ ] `autoCheckUpdates` off → no request is made at launch
 - [ ] Light/Dark switch
 - [ ] Keyboard: Tab through home tools, Enter activates
 - [ ] Focus rings visible
@@ -65,10 +71,13 @@ Languages: zh-TW, zh-CN, en, ja, ko
 
 - [ ] Authenticode sign `ExcelTools.exe` if cert available
 - [ ] SmartScreen note for unsigned builds
+- [ ] Release publishes a `digest` for the exe asset (required for auto-install)
 
 ## Distribution
 
-Offline USB / internal share is the default. No auto-update in MVP.
+Distribution is via GitHub Releases; the app's update check reads that same channel.
+Publish the exe asset with a SHA-256 `digest` or auto-install will be refused and
+users will be sent to the Releases page instead.
 Do not host on public CDN without reviewing privacy copy.
 
 ## Version bump
@@ -77,4 +86,7 @@ Update in:
 
 - `app.go` Health/GetAppInfo version string
 - `build/windows/info.json` / icon if needed
+- `wails.json` `info.productVersion` — **currently unset**, so the version shown
+  inside the exe's Windows file properties is blank even though the app reports
+  `app.go`'s value. Set it here to keep the two in sync.
 - This checklist header

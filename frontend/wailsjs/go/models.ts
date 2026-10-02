@@ -62,6 +62,7 @@ export namespace model {
 	    version: string;
 	    platform: string;
 	    localOnly: boolean;
+	    updateCheck: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new AppInfo(source);
@@ -73,6 +74,7 @@ export namespace model {
 	        this.version = source["version"];
 	        this.platform = source["platform"];
 	        this.localOnly = source["localOnly"];
+	        this.updateCheck = source["updateCheck"];
 	    }
 	}
 	export class FileRef {
@@ -164,6 +166,7 @@ export namespace model {
 	export class Settings {
 	    language: string;
 	    theme: string;
+	    autoCheckUpdates: boolean;
 	    defaults: Record<string, string>;
 	
 	    static createFrom(source: any = {}) {
@@ -174,6 +177,7 @@ export namespace model {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.language = source["language"];
 	        this.theme = source["theme"];
+	        this.autoCheckUpdates = source["autoCheckUpdates"];
 	        this.defaults = source["defaults"];
 	    }
 	}
@@ -235,6 +239,11 @@ export namespace model {
 	    latestVersion: string;
 	    status: string;
 	    message: string;
+	    releaseNotes?: string;
+	    releaseUrl?: string;
+	    assetName?: string;
+	    assetSize?: number;
+	    canAutoInstall: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new UpdateCheckResult(source);
@@ -245,6 +254,27 @@ export namespace model {
 	        this.currentVersion = source["currentVersion"];
 	        this.latestVersion = source["latestVersion"];
 	        this.status = source["status"];
+	        this.message = source["message"];
+	        this.releaseNotes = source["releaseNotes"];
+	        this.releaseUrl = source["releaseUrl"];
+	        this.assetName = source["assetName"];
+	        this.assetSize = source["assetSize"];
+	        this.canAutoInstall = source["canAutoInstall"];
+	    }
+	}
+	export class UpdateInstallResult {
+	    status: string;
+	    code?: string;
+	    message: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new UpdateInstallResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.status = source["status"];
+	        this.code = source["code"];
 	        this.message = source["message"];
 	    }
 	}

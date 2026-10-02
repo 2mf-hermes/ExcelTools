@@ -118,40 +118,83 @@ type SheetListResult struct {
 	Note   string     `json:"note,omitempty"`
 }
 
+// Update status values reported to the UI.
+const (
+	// UpdateUpToDate means the running version is the newest published one.
+	UpdateUpToDate = "up-to-date"
+	// UpdateAvailable means a newer release exists.
+	UpdateAvailable = "available"
+	// UpdateError means the check itself failed (offline, HTTP error, …).
+	UpdateError = "error"
+	// UpdateSkipped means no check was attempted or a failure was suppressed so
+	// that an offline launch stays silent.
+	UpdateSkipped = "skipped"
+)
+
 // UpdateCheckResult is returned by the settings "check updates" action.
 type UpdateCheckResult struct {
 	CurrentVersion string `json:"currentVersion"`
 	LatestVersion  string `json:"latestVersion"`
-	Status         string `json:"status"` // up-to-date | no-source | error
+	Status         string `json:"status"` // up-to-date | available | error | skipped
 	Message        string `json:"message"`
+	ReleaseNotes   string `json:"releaseNotes,omitempty"`
+	ReleaseURL     string `json:"releaseUrl,omitempty"`
+	AssetName      string `json:"assetName,omitempty"`
+	AssetSize      int64  `json:"assetSize,omitempty"`
+	// CanAutoInstall is false when the release publishes no verifiable digest,
+	// in which case the UI offers the download page instead.
+	CanAutoInstall bool `json:"canAutoInstall"`
+}
+
+// UpdateInstallResult reports the outcome of an automatic install attempt.
+type UpdateInstallResult struct {
+	Status  string `json:"status"` // installed | error
+	Code    string `json:"code,omitempty"`
+	Message string `json:"message"`
+}
+
+// UpdateProgress is the payload of the "update:progress" event.
+type UpdateProgress struct {
+	Done  int64 `json:"done"`
+	Total int64 `json:"total"`
+	Pct   int   `json:"pct"`
 }
 
 // AppInfo is static metadata for the home/about surface.
 type AppInfo struct {
-	Name      string `json:"name"`
-	Version   string `json:"version"`
-	Platform  string `json:"platform"`
-	LocalOnly bool   `json:"localOnly"`
+	Name     string `json:"name"`
+	Version  string `json:"version"`
+	Platform string `json:"platform"`
+	// LocalOnly means user documents are never uploaded: all processing happens
+	// on this machine. The update check is the single outbound request and is
+	// disableable; see UpdateCheck.
+	LocalOnly bool `json:"localOnly"`
+	// UpdateCheck reports whether this build can check for updates.
+	UpdateCheck bool `json:"updateCheck"`
 }
 
 // Settings is the persisted local preference file shape.
 type Settings struct {
-	Language string            `json:"language"`
-	Theme    string            `json:"theme"`
-	Defaults map[string]string `json:"defaults"`
+	Language string `json:"language"`
+	Theme    string `json:"theme"`
+	// AutoCheckUpdates controls the version check at launch. It is the only
+	// outbound request the app makes, so it is user-controlled.
+	AutoCheckUpdates bool              `json:"autoCheckUpdates"`
+	Defaults         map[string]string `json:"defaults"`
 }
 
 // DefaultSettings returns factory preferences.
 func DefaultSettings() Settings {
 	return Settings{
-		Language: "system",
-		Theme:    "system",
+		Language:         "system",
+		Theme:            "system",
+		AutoCheckUpdates: true,
 		Defaults: map[string]string{
-			"outputDirMode":     "same-as-source",
-			"headerMode":        string(HeaderEach),
-			"columnAlign":       string(AlignByHeader),
-			"skipEmptySheets":   "true",
-			"addSourceColumn":   "true",
+			"outputDirMode":       "same-as-source",
+			"headerMode":          string(HeaderEach),
+			"columnAlign":         string(AlignByHeader),
+			"skipEmptySheets":     "true",
+			"addSourceColumn":     "true",
 			"keepBaseOtherSheets": "true",
 		},
 	}

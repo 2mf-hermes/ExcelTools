@@ -20,7 +20,7 @@
 
 ## 📖 這是什麼
 
-ExcelTools 是一套**完全離線、本機處理**的 Excel 桌面工具，用 Wails v2 打包 Go 引擎與 React 介面。它把日常最惱人的「把一堆表格拼在一起」變成幾次點擊——而且**永遠不會改動你的原始檔案**。
+ExcelTools 是一套**本機優先、離線可用**的 Excel 桌面工具，用 Wails v2 打包 Go 引擎與 React 介面。它把日常最惱人的「把一堆表格拼在一起」變成幾次點擊——而且**永遠不會改動你的原始檔案**。
 
 ## 🎬 展示畫面
 
@@ -40,7 +40,20 @@ ExcelTools 是一套**完全離線、本機處理**的 Excel 桌面工具，用 
 - 🔒 **來源零修改** — 所有處理都在本機完成，原始檔案原封不動。
 - 🌐 **五種語言** — 繁體中文、簡體中文、English、日本語、한국어。
 - 🎨 **三種主題** — 淺色 / 深色 / 跟隨系統。
-- 📴 **完全離線** — 不連網、不上傳，資料留在你的電腦。
+- 📴 **離線可用** — 檔案不上傳，全部在本機處理。
+- 🔄 **自動更新** — 啟動時檢查 GitHub Releases；經你確認後才下載安裝，並以 SHA-256 驗證檔案。
+
+## 🔒 隱私與連線
+
+| 行為 | 說明 |
+|------|------|
+| 你的檔案 | **永不離開本機**。合併、讀寫全部在電腦上完成，沒有任何上傳。 |
+| 唯一的對外連線 | 啟動時的**更新檢查**（`api.github.com`），以及你按下「下載並安裝」後的更新下載。可在 **設定 → 啟動時自動檢查更新** 關閉。 |
+| 離線時 | 更新檢查會**靜默失敗**，不會跳錯誤、不影響功能。 |
+| 更新安全 | 僅允許 HTTPS 與本專案 GitHub 網域；重新導向逐跳驗證；下載後比對官方 SHA-256，**不符即中止不安裝**；不要求系統管理員權限、不呼叫外部指令、不常駐背景程序。 |
+| 遙測 | **無**。沒有分析、沒有 CDN、沒有遠端設定。 |
+
+> 早期版本 README 寫「完全不連網」。新增更新功能後這句話不再成立，因此在此明確改寫，而非默默略過。
 
 ## 🚀 快速上手
 
@@ -131,7 +144,17 @@ Built with Wails v2 + React + TypeScript + Go.
 - 🔒 **Sources never modified** — everything runs locally; originals stay untouched.
 - 🌐 **5 languages** — zh-TW, zh-CN, English, 日本語, 한국어.
 - 🎨 **3 themes** — light / dark / system.
-- 📴 **Fully offline** — no network, no uploads.
+- 📴 **Offline-capable** — your files are never uploaded; everything runs locally.
+- 🔄 **Auto-update** — checks GitHub Releases at launch and installs only after you confirm, with SHA-256 verification.
+
+### Privacy & Network
+
+Your documents never leave your machine. The **only** outbound request is the
+update check (`api.github.com`) plus the update download you explicitly confirm;
+you can disable the check in **Settings → Check for updates at startup**. An offline
+launch fails silently. Updates are HTTPS-only, restricted to this project's GitHub
+hosts, validated on every redirect hop, and installed only if the SHA-256 digest
+matches. No telemetry, no CDN, no elevation, no background processes.
 
 ### Getting Started
 

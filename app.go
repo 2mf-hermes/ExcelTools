@@ -16,6 +16,7 @@ type App struct {
 	settings model.Settings
 	sheet    sheetJob
 	fileJob  fileJob
+	upd      updater
 }
 
 // NewApp creates a new App application struct
@@ -30,7 +31,7 @@ func (a *App) startup(ctx context.Context) {
 }
 
 // appVersion is the single source of truth for displayed version.
-const appVersion = "0.4.0-m4"
+const appVersion = "0.5.0-m5"
 
 // Health returns a simple liveness payload for the UI shell.
 func (a *App) Health() map[string]string {
@@ -43,21 +44,11 @@ func (a *App) Health() map[string]string {
 // GetAppInfo returns static app metadata.
 func (a *App) GetAppInfo() model.AppInfo {
 	return model.AppInfo{
-		Name:      "ExcelTools",
-		Version:   appVersion,
-		Platform:  runtime.GOOS,
-		LocalOnly: true,
-	}
-}
-
-// CheckForUpdates reports the installed version.
-// MVP has no network update channel (privacy: no background connections).
-func (a *App) CheckForUpdates() model.UpdateCheckResult {
-	return model.UpdateCheckResult{
-		CurrentVersion: appVersion,
-		LatestVersion:  appVersion,
-		Status:         "up-to-date",
-		Message:        "local-only: no update channel configured",
+		Name:        "ExcelTools",
+		Version:     appVersion,
+		Platform:    runtime.GOOS,
+		LocalOnly:   true,
+		UpdateCheck: true,
 	}
 }
 
