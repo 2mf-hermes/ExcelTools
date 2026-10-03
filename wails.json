@@ -9,5 +9,12 @@
   "author": {
     "name": "2MFs",
     "email": "2mfs.dev@gmail.com"
+  },
+  "info": {
+    "companyName": "2MFs",
+    "productName": "ExcelTools",
+    "productVersion": "0.5.0.5",
+    "copyright": "Copyright (c) 2026 2MFs",
+    "comments": "Local-first Excel tool collection. Builds on the 0.5.0-m5 milestone; the numeric file version uses the .5 suffix for m5."
   }
 }

@@ -86,7 +86,9 @@ Update in:
 
 - `app.go` Health/GetAppInfo version string
 - `build/windows/info.json` / icon if needed
-- `wails.json` `info.productVersion` — **currently unset**, so the version shown
-  inside the exe's Windows file properties is blank even though the app reports
-  `app.go`'s value. Set it here to keep the two in sync.
+- `wails.json` `info.productVersion` — set to `0.5.0.5` (numeric; the app's own
+  version lives in `app.go`). **Known issue:** `wails build` on this machine emits
+  no `.syso`, so the exe's Windows file-properties tab stays blank despite this
+  being configured. The in-app version (from `app.go`) is correct; only the shell
+  metadata is missing. Worth investigating before a 1.0.
 - This checklist header
