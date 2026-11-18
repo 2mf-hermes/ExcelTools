@@ -25,9 +25,11 @@ type Props = {
   locale: Locale;
   onRemove?: (path: string) => void;
   onClear?: () => void;
+  /** Rendered under the Size cell, e.g. the resolved or pinned worksheet. */
+  sheetLabel?: (path: string) => React.ReactNode;
 };
 
-export function FileList({ files, locale, onRemove, onClear }: Props) {
+export function FileList({ files, locale, onRemove, onClear, sheetLabel }: Props) {
   const ok = files.filter((f) => f.status === "ok").length;
   const skipped = files.filter((f) => f.status === "skipped").length;
   const failed = files.filter((f) => f.status === "failed").length;
@@ -64,6 +66,7 @@ export function FileList({ files, locale, onRemove, onClear }: Props) {
             <tr>
               <th>{t(locale, "fileListTitle")}</th>
               <th style={{ width: 88 }}>Size</th>
+              {sheetLabel && <th style={{ width: 200 }}>{t(locale, "usedSheet")}</th>}
               <th style={{ width: 100 }}>Status</th>
               {onRemove && <th style={{ width: 72 }} />}
             </tr>
@@ -76,6 +79,7 @@ export function FileList({ files, locale, onRemove, onClear }: Props) {
                   {f.reason ? <span className="reason">{f.reason}</span> : null}
                 </td>
                 <td className="col-num">{formatSize(f.size || 0)}</td>
+                {sheetLabel && <td>{sheetLabel(f.path)}</td>}
                 <td>{statusChip(f.status, locale)}</td>
                 {onRemove && (
                   <td>

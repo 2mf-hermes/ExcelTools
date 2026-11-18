@@ -29,7 +29,13 @@ type ProgressFunc func(ev model.ProgressEvent)
 type Options struct {
 	Paths               []string
 	HeaderRows          int
-	SheetIndex          int // 1-based
+	// SheetMode chooses the source worksheet for every file: auto (skip blank
+	// sheets), first, index or name. Empty means index.
+	SheetMode SheetMode
+	// SheetIndex is the 1-based position used by SheetModeIndex.
+	SheetIndex int
+	// SheetOverrides picks a specific worksheet per file, keyed by file path.
+	SheetOverrides      SheetMap
 	ColumnAlign         model.ColumnAlign
 	AddSourceFile       bool
 	KeepBaseOtherSheets bool
@@ -100,6 +106,7 @@ func Merge(ctx context.Context, opts Options, progress ProgressFunc) (*model.Mer
 		outWb          *excelize.File
 		outSheet       string
 		baseExt        = ".xlsx"
+		manifest       []ManifestEntry
 		maxCols        int
 		nextRow        int
 		baseHeader     []string
@@ -140,13 +147,12 @@ func Merge(ctx context.Context, opts Options, progress ProgressFunc) (*model.Mer
 			continue
 		}
 
-		sheetNames := srcWb.GetSheetList()
-		if len(sheetNames) < opts.SheetIndex {
+		srcSheet, srcIndex, sheetErr := ResolveSheet(srcWb, path, opts.SheetMode, opts.SheetIndex, opts.SheetOverrides)
+		if sheetErr != nil {
 			srcWb.Close()
-			rep.Skipped(name, fmt.Sprintf("only %d sheets, need index %d", len(sheetNames), opts.SheetIndex))
+			rep.Skipped(name, sheetErr.Error())
 			continue
 		}
-		srcSheet := sheetNames[opts.SheetIndex-1]
 
 		usedRows, usedCols, err := usedExtent(srcWb, srcSheet)
 		if err != nil || usedRows == 0 || usedCols == 0 {
@@ -173,6 +179,7 @@ func Merge(ctx context.Context, opts Options, progress ProgressFunc) (*model.Mer
 				baseHeader = readHeaderRow(outWb, outSheet, 1, usedCols)
 			}
 			rep.Success(name, usedRows)
+			manifest = append(manifest, ManifestEntry{Path: path, Name: name, Sheet: srcSheet, Index: srcIndex})
 			firstFileName = name
 			firstFileRows = usedRows
 			nextRow = usedRows + 1
@@ -220,6 +227,8 @@ func Merge(ctx context.Context, opts Options, progress ProgressFunc) (*model.Mer
 		if newMax > maxCols {
 			maxCols = newMax
 		}
+
+		manifest = append(manifest, ManifestEntry{Path: path, Name: name, Sheet: srcSheet, Index: srcIndex})
 
 		sourceCol := 0
 		if opts.AddSourceFile {
@@ -331,6 +340,10 @@ func Merge(ctx context.Context, opts Options, progress ProgressFunc) (*model.Mer
 	res.Cols = maxCols
 	res.DurationMs = time.Since(start).Milliseconds()
 	res.Items = rep.Items()
+	res.Sheets = make([]model.FileSheet, 0, len(manifest))
+	for _, m := range manifest {
+		res.Sheets = append(res.Sheets, model.FileSheet{Path: m.Path, Name: m.Name, Sheet: m.Sheet, Index: m.Index})
+	}
 	switch {
 	case !res.Success:
 		res.Message = "E_EMPTY: no files produced data"

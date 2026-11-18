@@ -110,6 +110,16 @@ type MergeResult struct {
 	Cols       int          `json:"cols"`
 	DurationMs int64        `json:"durationMs"`
 	Items      []ItemReport `json:"items"`
+	// Sheets lists the worksheet each contributing file supplied, in merge order.
+	Sheets []FileSheet `json:"sheets"`
+}
+
+// FileSheet records which worksheet a file contributed to a multi-file merge.
+type FileSheet struct {
+	Path  string `json:"path"`
+	Name  string `json:"name"`
+	Sheet string `json:"sheet"`
+	Index int    `json:"index"`
 }
 
 // SheetListResult is the UI payload for workbook sheet preview.

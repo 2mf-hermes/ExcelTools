@@ -8,7 +8,7 @@ import {
   RevealInExplorer,
   ScanFolder,
 } from "../../wailsjs/go/main/App";
-import type { model } from "../../wailsjs/go/models";
+import { main, type model } from "../../wailsjs/go/models";
 import { DropZone } from "../components/DropZone";
 import { FileList } from "../components/FileList";
 import { SectionBlock, ToolHero } from "../components/ToolLayout";
@@ -22,9 +22,12 @@ import {
 } from "../components/ToolIcons";
 import { t, type Locale } from "../i18n";
 import { EventsOn, OnFileDrop, OnFileDropOff } from "../../wailsjs/runtime/runtime";
+import { useSheetLists, type SheetMap } from "./useSheetLists";
 
 type Phase = "input" | "running" | "result";
 type ColumnAlign = "by-header" | "by-position" | "abort";
+/** Mirrors files.SheetMode on the Go side. */
+type SheetMode = "auto" | "index";
 type ProgressEvent = {
   phase: string;
   current: number;
@@ -42,6 +45,15 @@ function mergeRefs(prev: model.FileRef[], next: model.FileRef[]): model.FileRef[
   return Array.from(map.values());
 }
 
+/** "data · #3 · 120 rows" style label for one pinned / loaded sheet. */
+function sheetCaption(s: model.SheetRef, index: number, locale: Locale): string {
+  const flags: string[] = [];
+  if (s.empty) flags.push(t(locale, "emptySheet"));
+  if (s.hidden) flags.push(t(locale, "hiddenSheet"));
+  const base = `${s.name} · #${index} · ${s.rows} ${t(locale, "rows")}`;
+  return flags.length ? `${base} · ${flags.join(" · ")}` : base;
+}
+
 export function FileCombinePage({ locale }: Props) {
   const [phase, setPhase] = useState<Phase>("input");
   const [files, setFiles] = useState<model.FileRef[]>([]);
@@ -50,11 +62,18 @@ export function FileCombinePage({ locale }: Props) {
   const [folderPath, setFolderPath] = useState("");
 
   const [headerRows, setHeaderRows] = useState(1);
+  const [sheetMode, setSheetMode] = useState<SheetMode>("auto");
   const [sheetIndex, setSheetIndex] = useState(1);
   const [columnAlign, setColumnAlign] = useState<ColumnAlign>("by-header");
   const [addSourceFile, setAddSourceFile] = useState(true);
   const [keepBaseOtherSheets, setKeepBaseOtherSheets] = useState(true);
   const [keepBlankRows, setKeepBlankRows] = useState(true);
+
+  // path -> sheets (loaded), path -> error text (unreadable)
+  const [sheetsByPath, setSheetsByPath] = useState<SheetMap>({});
+  const [sheetErrors, setSheetErrors] = useState<Record<string, string>>({});
+  // path -> 1-based sheet position pinned by the user; absent = follow the rule
+  const [pins, setPins] = useState<Record<string, number>>({});
 
   const [progress, setProgress] = useState<ProgressEvent | null>(null);
   const [result, setResult] = useState<model.MergeResult | null>(null);
@@ -162,6 +181,12 @@ export function FileCombinePage({ locale }: Props) {
 
   const onRemove = (path: string) => {
     setFiles((prev) => prev.filter((f) => f.path !== path));
+    setPins((prev) => {
+      if (!(path in prev)) return prev;
+      const next = { ...prev };
+      delete next[path];
+      return next;
+    });
   };
 
   const okPaths = useMemo(
@@ -169,6 +194,34 @@ export function FileCombinePage({ locale }: Props) {
     [files],
   );
   const hasXls = files.some((f) => f.status === "ok" && f.ext === ".xls");
+
+  const onSheetsLoaded = useCallback(
+    (path: string, sheets: model.SheetRef[] | null, err?: string) => {
+      if (sheets) {
+        setSheetsByPath((prev) => ({ ...prev, [path]: sheets }));
+      } else {
+        setSheetErrors((prev) => ({ ...prev, [path]: err ?? "?" }));
+      }
+    },
+    [],
+  );
+  useSheetLists(okPaths, sheetsByPath, onSheetsLoaded);
+
+  /** The sheet a file contributes under the current uniform rule. */
+  const followedIndex = useCallback(
+    (sheets: model.SheetRef[]): number => {
+      if (sheetMode === "index") return sheetIndex;
+      const first = sheets.findIndex((s) => !s.empty && !s.hidden);
+      return first >= 0 ? first + 1 : 1;
+    },
+    [sheetMode, sheetIndex],
+  );
+
+  const resultSheets = useMemo(() => {
+    const map = new Map<string, model.FileSheet>();
+    for (const s of result?.sheets ?? []) map.set(s.path, s);
+    return map;
+  }, [result]);
 
   const onRun = useCallback(async () => {
     if (okPaths.length === 0) {
@@ -181,16 +234,23 @@ export function FileCombinePage({ locale }: Props) {
     setProgress({ phase: "start", current: 0, total: 1, label: "", percent: 0 });
     setPhase("running");
     try {
-      const res = await MergeFiles({
-        paths: okPaths,
-        headerRows,
-        sheetIndex,
-        columnAlign,
-        addSourceFile,
-        keepBaseOtherSheets,
-        keepBlankRows,
-        outputDir: "",
-      });
+      const overrides = Object.entries(pins)
+        .filter(([path]) => okPaths.includes(path))
+        .map(([path, idx]) => ({ path, name: "", index: idx }));
+      const res = await MergeFiles(
+        main.MergeFilesRequest.createFrom({
+          paths: okPaths,
+          headerRows,
+          sheetMode,
+          sheetIndex,
+          sheetOverrides: overrides,
+          columnAlign,
+          addSourceFile,
+          keepBaseOtherSheets,
+          keepBlankRows,
+          outputDir: "",
+        }),
+      );
       setResult(res);
       setPhase("result");
     } catch (e) {
@@ -205,7 +265,7 @@ export function FileCombinePage({ locale }: Props) {
       setRunning(false);
       setProgress(null);
     }
-  }, [okPaths, headerRows, sheetIndex, columnAlign, addSourceFile, keepBaseOtherSheets, keepBlankRows, locale]);
+  }, [okPaths, headerRows, sheetMode, sheetIndex, pins, columnAlign, addSourceFile, keepBaseOtherSheets, keepBlankRows, locale]);
 
   const onCancel = useCallback(async () => {
     try {
@@ -214,6 +274,34 @@ export function FileCombinePage({ locale }: Props) {
       /* ignore */
     }
   }, []);
+
+  const sheetCell = (path: string) => {
+    const sheets = sheetsByPath[path];
+    if (!sheets) {
+      const err = sheetErrors[path];
+      return err ? <span className="reason">{err}</span> : <span className="reason">{t(locale, "sheetsLoading")}</span>;
+    }
+    const pinned = pins[path];
+    const idx = pinned && pinned <= sheets.length ? pinned : followedIndex(sheets);
+    const s = sheets[idx - 1];
+    if (!s) return <span className="reason">—</span>;
+    return (
+      <span className="reason">
+        {pinned ? "📌 " : ""}
+        {s.name} · #{idx}
+      </span>
+    );
+  };
+
+  const resultSheetCell = (path: string) => {
+    const used = resultSheets.get(path);
+    if (!used) return <span className="reason">—</span>;
+    return (
+      <span className="reason">
+        {used.sheet} · #{used.index}
+      </span>
+    );
+  };
 
   return (
     <div>
@@ -310,7 +398,11 @@ export function FileCombinePage({ locale }: Props) {
               files={files}
               locale={locale}
               onRemove={onRemove}
-              onClear={() => setFiles([])}
+              onClear={() => {
+                setFiles([]);
+                setPins({});
+              }}
+              sheetLabel={sheetCell}
             />
           </SectionBlock>
 
@@ -329,18 +421,30 @@ export function FileCombinePage({ locale }: Props) {
                 <option value={3}>{t(locale, "headerRows3")}</option>
               </select>
             </label>
-            <label className="field-row">
-              <span>{t(locale, "sheetIndex")}</span>
-              <input
+            <div className="field-row">
+              <span>{t(locale, "sheetMode")}</span>
+              <select
                 className="select-control"
-                type="number"
-                min={1}
-                max={255}
-                value={sheetIndex}
-                onChange={(e) => setSheetIndex(Math.max(1, Number(e.target.value) || 1))}
-              />
-              <span className="reason">{t(locale, "sheetIndexDesc")}</span>
-            </label>
+                value={sheetMode}
+                onChange={(e) => setSheetMode(e.target.value as SheetMode)}
+                aria-label={t(locale, "sheetMode")}
+              >
+                <option value="auto">{t(locale, "sheetModeAuto")}</option>
+                <option value="index">{t(locale, "sheetModeIndex")}</option>
+              </select>
+              {sheetMode === "index" && (
+                <input
+                  className="select-control"
+                  type="number"
+                  min={1}
+                  max={255}
+                  value={sheetIndex}
+                  aria-label={t(locale, "sheetIndex")}
+                  onChange={(e) => setSheetIndex(Math.max(1, Number(e.target.value) || 1))}
+                />
+              )}
+              <span className="reason">{t(locale, "sheetModeDesc")}</span>
+            </div>
             <label className="field-row">
               <span>{t(locale, "columnAlign")}</span>
               <select
@@ -390,8 +494,71 @@ export function FileCombinePage({ locale }: Props) {
                 <span className="reason">{t(locale, "keepBlankRowsDesc")}</span>
               </span>
             </label>
-          </div>
+            </div>
           </SectionBlock>
+
+          {okPaths.length > 0 && (
+            <SectionBlock icon={<IconFiles />} label={t(locale, "perFileSheets")}>
+              <div className="panel">
+                <p className="footer-note" style={{ marginTop: 0 }}>
+                  {t(locale, "perFileSheetsDesc")}
+                </p>
+                <table className="list-table">
+                  <thead>
+                    <tr>
+                      <th>{t(locale, "fileListTitle")}</th>
+                      <th style={{ width: 360 }}>{t(locale, "sheetStepSheets")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {okPaths.map((path) => {
+                      const sheets = sheetsByPath[path];
+                      const file = files.find((f) => f.path === path);
+                      const err = sheetErrors[path];
+                      return (
+                        <tr key={path}>
+                          <td className="col-name">{file?.name ?? path}</td>
+                          <td>
+                            {err ? (
+                              <span className="reason">{err}</span>
+                            ) : !sheets ? (
+                              <span className="reason">{t(locale, "sheetsLoading")}</span>
+                            ) : sheets.length === 0 ? (
+                              <span className="reason">{t(locale, "sheetListEmpty")}</span>
+                            ) : (
+                              <select
+                                className="select-control"
+                                value={pins[path] ?? ""}
+                                aria-label={`${file?.name ?? path} ${t(locale, "sheetStepSheets")}`}
+                                onChange={(e) => {
+                                  const v = e.target.value;
+                                  setPins((prev) => {
+                                    const next = { ...prev };
+                                    if (v === "") delete next[path];
+                                    else next[path] = Number(v);
+                                    return next;
+                                  });
+                                }}
+                              >
+                                <option value="">
+                                  {t(locale, "perFileFollow")} · #{followedIndex(sheets)}
+                                </option>
+                                {sheets.map((s, i) => (
+                                  <option key={`${s.name}-${i}`} value={i + 1}>
+                                    {sheetCaption(s, i + 1, locale)}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </SectionBlock>
+          )}
 
           <div className="btn-row" style={{ marginTop: "var(--space-4)" }}>
             <button
@@ -468,6 +635,27 @@ export function FileCombinePage({ locale }: Props) {
               ))}
             </ul>
           )}
+          {(result.sheets?.length ?? 0) > 0 && (
+            <>
+              <h3 style={{ marginTop: "var(--space-4)" }}>{t(locale, "usedSheet")}</h3>
+              <table className="list-table">
+                <thead>
+                  <tr>
+                    <th>{t(locale, "fileListTitle")}</th>
+                    <th style={{ width: 240 }}>{t(locale, "usedSheet")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.sheets.map((s) => (
+                    <tr key={s.path}>
+                      <td className="col-name">{s.name}</td>
+                      <td>{resultSheetCell(s.path)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
           <div className="btn-row" style={{ marginTop: "var(--space-4)" }}>
             {result.outputPath && (
               <button
@@ -493,6 +681,7 @@ export function FileCombinePage({ locale }: Props) {
               className="btn btn-quiet"
               onClick={() => {
                 setFiles([]);
+                setPins({});
                 setResult(null);
                 setPhase("input");
                 setError(null);

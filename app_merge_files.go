@@ -56,14 +56,26 @@ func (a *App) CancelFileMerge() bool {
 
 // MergeFilesRequest is the UI payload for multi-file merge.
 type MergeFilesRequest struct {
-	Paths               []string `json:"paths"`
-	HeaderRows          int      `json:"headerRows"`
-	SheetIndex          int      `json:"sheetIndex"`
-	ColumnAlign         string   `json:"columnAlign"`
-	AddSourceFile       bool     `json:"addSourceFile"`
-	KeepBaseOtherSheets bool     `json:"keepBaseOtherSheets"`
-	KeepBlankRows       bool     `json:"keepBlankRows"`
-	OutputDir           string   `json:"outputDir"`
+	Paths      []string `json:"paths"`
+	HeaderRows int      `json:"headerRows"`
+	// SheetMode is "auto" | "first" | "index" | "name"; empty means "index".
+	SheetMode  string `json:"sheetMode"`
+	SheetIndex int    `json:"sheetIndex"`
+	// SheetOverrides pins a specific worksheet per file path. A name wins over
+	// an index; the index is the fallback when the tab was renamed or reordered.
+	SheetOverrides      []SheetOverride `json:"sheetOverrides"`
+	ColumnAlign         string          `json:"columnAlign"`
+	AddSourceFile       bool            `json:"addSourceFile"`
+	KeepBaseOtherSheets bool            `json:"keepBaseOtherSheets"`
+	KeepBlankRows       bool            `json:"keepBlankRows"`
+	OutputDir           string          `json:"outputDir"`
+}
+
+// SheetOverride pins one file to a specific worksheet.
+type SheetOverride struct {
+	Path  string `json:"path"`
+	Name  string `json:"name"`
+	Index int    `json:"index"`
 }
 
 // MergeFiles runs multi-workbook merge.
@@ -82,6 +94,20 @@ func (a *App) MergeFiles(req MergeFilesRequest) (*model.MergeResult, error) {
 	default:
 		return nil, fmt.Errorf("E_INTERNAL: unknown column align")
 	}
+	mode := files.SheetMode(strings.TrimSpace(req.SheetMode))
+	if !files.IsValidSheetMode(mode) {
+		return nil, fmt.Errorf("E_INTERNAL: unknown sheet mode")
+	}
+	overrides := files.NewSheetMap()
+	for _, ov := range req.SheetOverrides {
+		if strings.TrimSpace(ov.Path) == "" {
+			continue
+		}
+		if strings.TrimSpace(ov.Name) == "" && ov.Index < 1 {
+			continue // nothing pinned
+		}
+		overrides.Set(ov.Path, files.SheetChoice{Name: strings.TrimSpace(ov.Name), Index: ov.Index})
+	}
 
 	ctx, err := a.beginFileJob()
 	if err != nil {
@@ -96,7 +122,9 @@ func (a *App) MergeFiles(req MergeFilesRequest) (*model.MergeResult, error) {
 	res, merr := files.Merge(ctx, files.Options{
 		Paths:               req.Paths,
 		HeaderRows:          req.HeaderRows,
+		SheetMode:           mode,
 		SheetIndex:          req.SheetIndex,
+		SheetOverrides:      overrides,
 		ColumnAlign:         align,
 		AddSourceFile:       req.AddSourceFile,
 		KeepBaseOtherSheets: req.KeepBaseOtherSheets,

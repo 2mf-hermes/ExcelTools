@@ -1,9 +1,27 @@
 export namespace main {
 	
+	export class SheetOverride {
+	    path: string;
+	    name: string;
+	    index: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new SheetOverride(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.path = source["path"];
+	        this.name = source["name"];
+	        this.index = source["index"];
+	    }
+	}
 	export class MergeFilesRequest {
 	    paths: string[];
 	    headerRows: number;
+	    sheetMode: string;
 	    sheetIndex: number;
+	    sheetOverrides: SheetOverride[];
 	    columnAlign: string;
 	    addSourceFile: boolean;
 	    keepBaseOtherSheets: boolean;
@@ -18,13 +36,33 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.paths = source["paths"];
 	        this.headerRows = source["headerRows"];
+	        this.sheetMode = source["sheetMode"];
 	        this.sheetIndex = source["sheetIndex"];
+	        this.sheetOverrides = this.convertValues(source["sheetOverrides"], SheetOverride);
 	        this.columnAlign = source["columnAlign"];
 	        this.addSourceFile = source["addSourceFile"];
 	        this.keepBaseOtherSheets = source["keepBaseOtherSheets"];
 	        this.keepBlankRows = source["keepBlankRows"];
 	        this.outputDir = source["outputDir"];
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class MergeSheetsRequest {
 	    sourcePath: string;
@@ -99,6 +137,24 @@ export namespace model {
 	        this.reason = source["reason"];
 	    }
 	}
+	export class FileSheet {
+	    path: string;
+	    name: string;
+	    sheet: string;
+	    index: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new FileSheet(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.path = source["path"];
+	        this.name = source["name"];
+	        this.sheet = source["sheet"];
+	        this.index = source["index"];
+	    }
+	}
 	export class ItemReport {
 	    file: string;
 	    status: string;
@@ -127,6 +183,7 @@ export namespace model {
 	    cols: number;
 	    durationMs: number;
 	    items: ItemReport[];
+	    sheets: FileSheet[];
 	
 	    static createFrom(source: any = {}) {
 	        return new MergeResult(source);
@@ -143,6 +200,7 @@ export namespace model {
 	        this.cols = source["cols"];
 	        this.durationMs = source["durationMs"];
 	        this.items = this.convertValues(source["items"], ItemReport);
+	        this.sheets = this.convertValues(source["sheets"], FileSheet);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
