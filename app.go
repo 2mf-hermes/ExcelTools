@@ -17,6 +17,10 @@ type App struct {
 	sheet    sheetJob
 	fileJob  fileJob
 	upd      updater
+
+	// emit publishes a frontend event. nil means the real Wails runtime; tests
+	// swap in a no-op so long jobs can run without a lifecycle context.
+	emit func(ctx context.Context, name string, data ...interface{})
 }
 
 // NewApp creates a new App application struct

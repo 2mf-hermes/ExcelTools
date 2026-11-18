@@ -1,4 +1,4 @@
-﻿package main
+package main
 
 import (
 	"context"
@@ -45,7 +45,7 @@ func TestAppMergeFilesPerFileSheet(t *testing.T) {
 	// A: cover sheet first (blank), data on "sales".
 	a := filepath.Join(dir, "a.xlsx")
 	mkBook(t, a, map[string][][]string{
-		"cover": {{"Report"}},
+		"cover": {},
 		"sales": {{"Name", "Qty"}, {"apple", "1"}},
 	}, "cover", "sales")
 	// B: data on the second sheet; user pins it explicitly.
@@ -62,7 +62,8 @@ func TestAppMergeFilesPerFileSheet(t *testing.T) {
 	}, "blank", "z")
 
 	app := NewApp()
-	app.ctx = context.TODO()
+	app.ctx = context.Background()
+	app.emit = func(context.Context, string, ...interface{}) {}
 	res, err := app.MergeFiles(MergeFilesRequest{
 		Paths:          []string{a, b, c},
 		HeaderRows:     1,
@@ -116,4 +117,3 @@ func TestAppMergeFilesPerFileSheet(t *testing.T) {
 		t.Error("unknown sheetMode was accepted")
 	}
 }
-

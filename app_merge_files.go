@@ -116,6 +116,13 @@ func (a *App) MergeFiles(req MergeFilesRequest) (*model.MergeResult, error) {
 	defer a.endFileJob()
 
 	progress := func(ev model.ProgressEvent) {
+		if a.ctx == nil {
+			return
+		}
+		if a.emit != nil {
+			a.emit(a.ctx, fileProgressEvent, ev)
+			return
+		}
 		wailsruntime.EventsEmit(a.ctx, fileProgressEvent, ev)
 	}
 

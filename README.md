@@ -35,7 +35,7 @@ ExcelTools 是一套**本機優先、離線可用**的 Excel 桌面工具，用 
 ## ✨ 主要特色
 
 - 🧩 **工作表合併** — 把單一活頁簿裡的多個工作表合併成一張。
-- 🗂️ **檔案合併** — 合併多個檔案的第 N 個工作表，並自動對齊欄位。
+- 🗂️ **檔案合併** — 合併多個工作表的指定內容：統一取「自動判斷（跳過空白工作表）」或第 N 個工作表，也可逐一指定每個檔案要用哪一個工作表；並自動對齊欄位。
 - 🔒 **來源零修改** — 所有處理都在本機完成，原始檔案原封不動。
 - 🌐 **五種語言** — 繁體中文、簡體中文、English、日本語、한국어。
 - 🎨 **三種主題** — 淺色 / 深色 / 跟隨系統。
@@ -139,7 +139,7 @@ Built with Wails v2 + React + TypeScript + Go.
 ### Features
 
 - 🧩 **Sheet combine** — merge multiple sheets from one workbook into one.
-- 🗂️ **File combine** — merge the Nth sheet across multiple files with automatic column alignment.
+- 🗂️ **File combine** — merge the right sheet from many files: one rule for all (auto-detect, skipping blank sheets, or the Nth sheet) or a specific sheet per file, with automatic column alignment.
 - 🔒 **Sources never modified** — everything runs locally; originals stay untouched.
 - 🌐 **5 languages** — zh-TW, zh-CN, English, 日本語, 한국어.
 - 🎨 **3 themes** — light / dark / system.
