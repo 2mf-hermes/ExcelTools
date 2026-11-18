@@ -2,133 +2,104 @@
 
 # 📊 ExcelTools
 
-**在地優先的 Excel 桌面工具集，讓多檔案、多工作表合併一鍵完成，來源檔絕不被修改。**
+ExcelTools 在 Windows 上合併 Excel 工作表。合併不需連網，也不會修改來源檔案。
 
 [![Version](https://img.shields.io/badge/version-0.5.0--m7-blue.svg)](https://github.com/2mf-hermes/ExcelTools/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Go](https://img.shields.io/badge/Go-1.25+-00ADD8.svg?logo=go&logoColor=white)](https://go.dev/)
-[![React](https://img.shields.io/badge/React-18-61DAFB.svg?logo=react&logoColor=black)](https://react.dev/)
+[![Go](https://img.shields.io/badge/Go-1.25.0-00ADD8.svg?logo=go&logoColor=white)](https://go.dev/)
+[![React](https://img.shields.io/badge/React-19-61DAFB.svg?logo=react&logoColor=black)](https://react.dev/)
 [![Wails](https://img.shields.io/badge/Wails-v2-DF0000.svg)](https://wails.io/)
 [![Platform](https://img.shields.io/badge/platform-Windows-0078D6.svg?logo=windows&logoColor=white)](#快速上手)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#貢獻指南)
 
-**繁體中文** ｜ [简体中文](README.zh-CN.md) ｜ [English](README.en.md)
+[繁體中文](README.md) ｜ [简体中文](README.zh-CN.md) ｜ [English](README.en.md)
 
 </div>
 
----
+## 功能
 
-## 📖 這是什麼
+- **工作表合併**：將同一個活頁簿中的多個工作表合併成一張表。
+- **多檔合併**：從多個活頁簿選取要合併的工作表，可依欄位標題或位置對齊。
+- **工作表選擇**：可為每個檔案單獨指定工作表，也可套用統一規則：自動跳過空白工作表，或選擇第 N 個工作表。
+- **五種語言**：繁體中文、簡體中文、English、日本語、한국어。
+- **三種外觀**：淺色、深色、跟隨系統。
 
-ExcelTools 是一套**本機優先、離線可用**的 Excel 桌面工具，用 Wails v2 打包 Go 引擎與 React 介面。它把日常最惱人的「把一堆表格拼在一起」變成幾次點擊——而且**永遠不會改動你的原始檔案**。
+例如，每月有一份活頁簿，要把各檔的「銷售」工作表彙整成一張表：在「多檔合併」加入檔案。若「銷售」都在第二張，就統一選第 2 個工作表；位置不同的檔案，再逐一指定。
 
-## 🎬 展示畫面
+## 展示畫面
 
 <div align="center">
-
 <img src="docs/screenshots/main-window-tw.png" alt="ExcelTools 主畫面" width="720" />
-<br/>
-<sub>主畫面：工具首頁與版本資訊</sub>
+<br/><sub>工具首頁</sub>
 
 <br/><br/>
 
-<img src="docs/screenshots/combine-file-tw.png" alt="多檔合併：逐一指定各檔案的工作表" width="720" />
-<br/>
-<sub>多檔合併：統一規則 + 逐一指定各檔案的工作表</sub>
-
+<img src="docs/screenshots/combine-file-tw.png" alt="多檔合併與工作表選擇" width="720" />
+<br/><sub>多檔合併：統一規則與逐檔工作表選擇</sub>
 </div>
 
-## ✨ 主要特色
+## 隱私與更新連線
 
-- 🧩 **工作表合併** — 把單一活頁簿裡的多個工作表合併成一張。
-- 🗂️ **檔案合併** — 合併多個工作表的指定內容：統一取「自動判斷（跳過空白工作表）」或第 N 個工作表，也可逐一指定每個檔案要用哪一個工作表；並自動對齊欄位。
-- 🔒 **來源零修改** — 所有處理都在本機完成，原始檔案原封不動。
-- 🌐 **五種語言** — 繁體中文、简体中文、English、日本語、한국어。
-- 🎨 **三種主題** — 淺色 / 深色 / 跟隨系統。
-- 📴 **離線可用** — 檔案不上傳，全部在本機處理。
-- 🔄 **自動更新** — 啟動時檢查 GitHub Releases；經你確認後才下載安裝，並以 SHA-256 驗證檔案；更新後自動清除舊版備份，無需再次重新啟動。
-
-## 🔒 隱私與連線
-
-| 行為 | 說明 |
+| 項目 | 說明 |
 |------|------|
-| 你的檔案 | **永不離開本機**。合併、讀寫全部在電腦上完成，沒有任何上傳。 |
-| 唯一的對外連線 | 啟動時的**更新檢查**（`api.github.com`），以及你按下「下載並安裝」後的更新下載。可在 **設定 → 啟動時自動檢查更新** 關閉。 |
-| 離線時 | 更新檢查會**靜默失敗**，不會跳錯誤、不影響功能。 |
-| 更新安全 | 僅允許 HTTPS 與本專案 GitHub 網域；重新導向逐跳驗證；下載後比對官方 SHA-256，**不符即中止不安裝**；不要求系統管理員權限、不呼叫外部指令、不常駐背景程式。 |
-| 遙測 | **無**。沒有分析、沒有 CDN、沒有遠端設定。 |
+| Excel 檔案 | 在本機讀取與寫入，不會上傳。來源檔案不會被覆寫。 |
+| 更新檢查 | 啟動時向 `api.github.com` 查詢最新 Release；可在設定中關閉。 |
+| 更新下載 | 只有在使用者確認後才下載，並比對 Release 提供的 SHA-256。 |
+| 連線安全 | 更新請求限 HTTPS，網址與重新導向主機會逐次檢查。 |
+| 遙測 | 不收集分析資料，也沒有遠端設定或 CDN。 |
 
-> 早期版本 README 寫「完全不連網」。新增更新功能後這句話不再成立，因此在此明確改寫，而非默默略過。
+離線時，啟動檢查失敗不會跳出錯誤，也不影響合併。確認安裝後，程式會驗證下載檔並重新啟動；找不到 SHA-256 或驗證不符時不會自動安裝。若重啟時舊版備份（`.old`）仍被占用，程式會在背景每 500 毫秒重試清除，最多 15 秒。
 
-## 🚀 快速上手
+## 快速上手
 
-### 前置需求
+### 使用已發布版本
 
-| 工具 | 版本 |
-|------|------|
-| [Go](https://go.dev/) | 1.25+ |
-| [Node.js](https://nodejs.org/) | 20+ |
-| [Wails CLI](https://wails.io/docs/gettingstarted/installation) | v2 |
-| NSIS（選用，用於產生安裝檔） | 最新版 |
+從 [Releases](https://github.com/2mf-hermes/ExcelTools/releases) 下載 Windows 可攜版，解壓縮後直接執行 `ExcelTools.exe`，不需要安裝。設定檔位於 `%AppData%\ExcelTools\settings.json`。
 
-### 安裝與建置
+### 從原始碼執行
+
+需求：Go 1.25.0 以上、Node.js 20.19+（20.x）或 22.12+、Wails CLI v2。若要產生 NSIS 安裝檔，另需 NSIS 3.x。
 
 ```powershell
-# 1. 取得原始碼
 git clone https://github.com/2mf-hermes/ExcelTools.git
 cd ExcelTools
-
-# 2. 安裝 Wails CLI（若尚未安裝）
 go install github.com/wailsapp/wails/v2/cmd/wails@latest
-
-# 3. 開發模式（熱重載）
 wails dev
 ```
 
-## 💡 使用範例
+### 建置與測試
 
 ```powershell
-# 產生可攜版執行檔（含測試）
+# 執行 Go 測試、i18n 檢查並建立可攜版 zip
 powershell -File scripts/package-windows.ps1
 
-# 手動建置可攜版
+# 單獨建置
 wails build
 
-# 產生 Windows 安裝檔（需 NSIS）
+# 需要 NSIS 時建立安裝檔
 wails build -nsis
-```
 
-建置完成後，可攜版執行檔位於 `dist/`，直接雙擊 `ExcelTools.exe` 即可使用，無需安裝。設定檔會存放於 `%AppData%\ExcelTools\settings.json`。
-
-### 執行測試
-
-```powershell
+# 測試
 go test ./...
 cd frontend; npm run test:i18n
 ```
 
-## 🗂️ 專案結構
+`wails build` 將執行檔放在 `build/bin/ExcelTools.exe`。打包腳本將可攜版 ZIP 放在 `dist/`；兩個輸出目錄都不納入版本控制。
 
+## 專案結構
+
+```text
+core/merge/       工作表與多檔合併邏輯
+core/update/      更新檢查、下載、驗證與安裝
+frontend/src/     React 介面與多語系
+platform/         檔案系統與平台層
+docs/             決策、行為規格、設計與發布清單
+scripts/          Windows 打包腳本
 ```
-core/merge/sheets|files   合併引擎（工作表 / 檔案）
-core/report | validate    報表與驗證邏輯
-core/update               更新檢查、下載與安裝
-frontend/src              React UI 與 i18n
-platform/                 檔案系統與 Excel 平台層
-docs/                     DECISIONS、BEHAVIOR_SPEC、DESIGN_TOKENS、RELEASE_CHECKLIST
-scripts/                  package-windows.ps1、圖示產生器
-```
 
-## 🤝 貢獻指南
+## 貢獻
 
-歡迎參與！流程如下：
+歡迎回報問題或提出 Pull Request。送出 PR 前，請執行上方測試，並在說明中寫下改了什麼、怎麼驗證。發布流程請參考 [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md)。
 
-1. Fork 本專案並建立分支：`git checkout -b feature/your-feature`
-2. 提交變更前先跑過測試：`go test ./...`
-3. 送出 Pull Request，並在描述中說明變更內容與測試方式。
+## 授權
 
-發行流程細節請見 [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md)。
-
-## 📄 授權條款
-
-本專案採用 [MIT License](LICENSE) 授權，可自由使用、修改與散佈。
+本專案採用 [MIT License](LICENSE)。
