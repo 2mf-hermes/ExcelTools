@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // Installer runs the download → verify → replace sequence.
@@ -91,6 +92,33 @@ func IsReleaseBinary(path string) bool {
 	return err == nil && !st.IsDir()
 }
 
+// Time bounds for removing leftovers that are still locked by the previous
+// process (or an antivirus scan) right after an update.
+const (
+	cleanupRetryInterval = 500 * time.Millisecond
+	cleanupRetryTimeout  = 15 * time.Second
+)
+
+// staleFiles returns the artifacts a previous update may have left behind.
+func staleFiles(exePath string) []string {
+	dir := filepath.Dir(exePath)
+	return []string{
+		exePath + ".old",
+		filepath.Join(dir, "ExcelTools.new.exe"),
+		filepath.Join(dir, "ExcelTools.download.zip"),
+	}
+}
+
+// hasStaleFiles reports whether any leftover artifact still exists.
+func hasStaleFiles(exePath string) bool {
+	for _, f := range staleFiles(exePath) {
+		if _, err := os.Stat(f); err == nil {
+			return true
+		}
+	}
+	return false
+}
+
 // CleanupStaleBackup removes the .old binary and any staged leftovers from a
 // previous update. Call once at startup; failures are intentionally ignored
 // because a still-locked file simply gets cleaned up on the next launch.
@@ -98,8 +126,53 @@ func CleanupStaleBackup(exePath string) {
 	if exePath == "" || !filepath.IsAbs(exePath) {
 		return
 	}
-	os.Remove(exePath + ".old")
-	dir := filepath.Dir(exePath)
-	os.Remove(filepath.Join(dir, "ExcelTools.new.exe"))
-	os.Remove(filepath.Join(dir, "ExcelTools.download.zip"))
+	for _, f := range staleFiles(exePath) {
+		os.Remove(f)
+	}
+}
+
+// CleanupStaleBackupRetrying behaves like CleanupStaleBackup and, when a file
+// is still locked, keeps retrying in the background: right after an update the
+// previous process may not have exited yet when the updated app starts, so its
+// .old binary can not be deleted on the first attempt. The retry runs every
+// 500ms for up to 15s and deletes a file as soon as it is unlocked, so the
+// leftover disappears without a manual relaunch.
+func CleanupStaleBackupRetrying(exePath string) {
+	CleanupStaleBackup(exePath)
+	if exePath == "" || !filepath.IsAbs(exePath) || !hasStaleFiles(exePath) {
+		return
+	}
+	go retryRemoveStaleFiles(exePath, cleanupRetryInterval, cleanupRetryTimeout, time.Sleep, os.Remove)
+}
+
+// retryRemoveStaleFiles keeps attempting removal until every stale file is
+// gone or the timeout has elapsed. sleep and remove are parameters so tests
+// can drive the loop without real clocks or file locks.
+func retryRemoveStaleFiles(exePath string, interval, timeout time.Duration, sleep func(time.Duration), remove func(string) error) {
+	deadline := time.Now().Add(timeout)
+	for {
+		gone := true
+		for _, f := range staleFiles(exePath) {
+			if err := remove(f); err != nil && !os.IsNotExist(err) {
+				gone = false
+			}
+		}
+		if gone || time.Now().After(deadline) {
+			return
+		}
+		sleep(interval)
+	}
+}
+
+// removePreviousBackup deletes a leftover backup before the swap renames the
+// running binary onto that name. A file held open cannot be removed or
+// replaced on Windows, so retry briefly before giving up and blocking the
+// update with "cannot rename running executable".
+func removePreviousBackup(path string) {
+	for i := 0; i < 30; i++ {
+		if err := os.Remove(path); err == nil || os.IsNotExist(err) {
+			return
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
 }

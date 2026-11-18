@@ -22,7 +22,7 @@ func SwapAndRestart(exePath, staged string, restart bool) error {
 	}
 
 	backup := exePath + ".old"
-	os.Remove(backup)
+	removePreviousBackup(backup)
 
 	if err := os.Rename(exePath, backup); err != nil {
 		return errCode(CodePerm, "cannot rename running executable: %v", err)

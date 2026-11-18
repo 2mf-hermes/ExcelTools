@@ -35,7 +35,7 @@ func (a *App) startup(ctx context.Context) {
 }
 
 // appVersion is the single source of truth for displayed version.
-const appVersion = "0.5.0-m5"
+const appVersion = "0.5.0-m7"
 
 // Health returns a simple liveness payload for the UI shell.
 func (a *App) Health() map[string]string {

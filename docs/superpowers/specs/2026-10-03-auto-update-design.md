@@ -139,7 +139,10 @@ A running executable cannot be overwritten, but it *can* be renamed.
      with a working install.
 5. Spawn the new `ExcelTools.exe` detached.
 6. `os.Exit(0)` the current process.
-7. On next startup, delete a leftover `ExcelTools.exe.old`.
+7. On the next startup, delete a leftover `ExcelTools.exe.old`. When it is
+   still locked by the exiting previous process, retry in the background every
+   500ms for up to 15s and delete it as soon as it is unlocked, so no second
+   manual launch is needed.
 
 Chosen over the common "write a .bat helper and shell out" approach because no
 script file is created and no interpreter runs — less attack surface and less

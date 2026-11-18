@@ -13,8 +13,8 @@
   "info": {
     "companyName": "2MFs",
     "productName": "ExcelTools",
-    "productVersion": "0.5.0.5",
+    "productVersion": "0.5.0.7",
     "copyright": "Copyright (c) 2026 2MFs",
-    "comments": "Local-first Excel tool collection. Builds on the 0.5.0-m5 milestone; the numeric file version uses the .5 suffix for m5."
+    "comments": "Local-first Excel tool collection. Builds on the 0.5.0-m7 milestone; the numeric file version uses the .7 suffix for m7."
   }
 }

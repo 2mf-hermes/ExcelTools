@@ -64,9 +64,12 @@ func runningExe() string {
 }
 
 // CleanupStaleUpdateFiles removes the previous binary's backup and any staged
-// download left behind by an interrupted update. Called once at startup.
+// download left behind by an interrupted update. Called once at startup; when
+// a file is still locked by the exiting previous process, a background retry
+// (every 500ms, up to 15s) removes it as soon as it is unlocked, so no second
+// manual launch is needed to finish the cleanup.
 func CleanupStaleUpdateFiles() {
-	update.CleanupStaleBackup(runningExe())
+	update.CleanupStaleBackupRetrying(runningExe())
 }
 
 // CheckForUpdates queries the release channel and reports the result.

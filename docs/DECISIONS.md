@@ -21,6 +21,7 @@ Status legend: [DECISION] locked · [ASSUMPTION] working default · [OPEN] still
 | D13 | Input files are opened read-only; never deleted/overwritten by the app | DECISION |
 | D14 | MVP target OS for acceptance: **Windows 10 1809+**; macOS/Linux smoke in M4 | DECISION |
 | D15 | In-app update: check **GitHub Releases API**, automatic install after explicit user confirmation | DECISION (M5) |
+| D16 | Update cleanup retries in the background (every 500ms, up to 15s) so a locked `.old` binary is removed as soon as it is unlocked, without a second launch | DECISION (M7) |
 
 ## Stack
 

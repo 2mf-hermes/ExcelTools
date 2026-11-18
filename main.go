@@ -13,7 +13,9 @@ var assets embed.FS
 
 func main() {
 	// Remove the previous version's backup file left by an update. This must run
-	// before the window opens so no stale artefact lingers beside the app.
+	// before the window opens so no stale artefact lingers beside the app; a
+	// file still locked by the exiting previous process is retried in the
+	// background instead of surviving until the next launch.
 	CleanupStaleUpdateFiles()
 
 	app := NewApp()

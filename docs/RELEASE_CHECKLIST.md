@@ -92,3 +92,7 @@ Update in:
   being configured. The in-app version (from `app.go`) is correct; only the shell
   metadata is missing. Worth investigating before a 1.0.
 - This checklist header
+- **Before tagging:** confirm `app.go` `appVersion` equals the release tag.
+  m6 shipped with the binary still reporting `0.5.0-m5`, so the updated app
+  kept offering to "update" to its own release. The numeric suffix maps m5→.5,
+  m7→.7.
